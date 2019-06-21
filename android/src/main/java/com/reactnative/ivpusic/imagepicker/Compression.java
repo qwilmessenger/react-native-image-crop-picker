@@ -26,7 +26,7 @@ import java.util.UUID;
 
 class Compression {
 
-    File resize(String originalImagePath, int maxWidth, int maxHeight, int quality) throws IOException {
+    File resize(String originalImagePath, int maxWidth, int maxHeight, int quality, String outputDir) throws IOException {
         Bitmap original = BitmapFactory.decodeFile(originalImagePath);
 
         int width = original.getWidth();
@@ -54,8 +54,16 @@ class Compression {
 
         Bitmap resized = Bitmap.createScaledBitmap(original, finalWidth, finalHeight, true);
         resized = Bitmap.createBitmap(resized, 0, 0, finalWidth, finalHeight, rotationMatrix, true);
-        File resizeImageFile = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), UUID.randomUUID() + ".jpg");
+        File path;
+
+        if (outputDir != null) {
+            path = new File(outputDir);
+        } else {
+            path = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES
+            );
+        }
+        File resizeImageFile = new File(path, UUID.randomUUID() + ".jpg");
 
         OutputStream os = new BufferedOutputStream(new FileOutputStream(resizeImageFile));
         resized.compress(Bitmap.CompressFormat.JPEG, quality, os);
@@ -80,7 +88,7 @@ class Compression {
         }
     }
 
-    File compressImage(final ReadableMap options, final String originalImagePath, final BitmapFactory.Options bitmapOptions) throws IOException {
+    File compressImage(final ReadableMap options, final String originalImagePath, final BitmapFactory.Options bitmapOptions, String outputDir) throws IOException {
         Integer maxWidth = options.hasKey("compressImageMaxWidth") ? options.getInt("compressImageMaxWidth") : null;
         Integer maxHeight = options.hasKey("compressImageMaxHeight") ? options.getInt("compressImageMaxHeight") : null;
         Double quality = options.hasKey("compressImageQuality") ? options.getDouble("compressImageQuality") : null;
@@ -115,7 +123,7 @@ class Compression {
             maxHeight = Math.min(maxHeight, bitmapOptions.outHeight);
         }
 
-        return resize(originalImagePath, maxWidth, maxHeight, targetQuality);
+        return resize(originalImagePath, maxWidth, maxHeight, targetQuality, outputDir);
     }
 
     synchronized void compressVideo(final Activity activity, final ReadableMap options, final String originalVideo, final String compressedVideo, final Promise promise) {

@@ -79,6 +79,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private boolean enableRotationGesture = false;
     private boolean disableCropperColorSetters = false;
     private boolean useFrontCamera = false;
+    private String galleryPath;
     private ReadableMap options;
 
     //Grey 800
@@ -118,6 +119,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     }
 
     private void setConfiguration(final ReadableMap options) {
+        galleryPath = options.hasKey("galleryPath") ? options.getString("galleryPath") : null;
         mediaType = options.hasKey("mediaType") ? options.getString("mediaType") : "any";
         multiple = options.hasKey("multiple") && options.getBoolean("multiple");
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
@@ -568,7 +570,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
         // if compression options are provided image will be compressed. If none options is provided,
         // then original image will be returned
-        File compressedImage = compression.compressImage(options, path, original);
+        File compressedImage = compression.compressImage(options, path, original, galleryPath);
         String compressedImagePath = compressedImage.getPath();
         BitmapFactory.Options options = validateImage(compressedImagePath);
         long modificationDate = new File(path).lastModified();
@@ -730,7 +732,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             if (resultUri != null) {
                 try {
                     if (width > 0 && height > 0) {
-                        resultUri = Uri.fromFile(compression.resize(resultUri.getPath(), width, height, 100));
+                        resultUri = Uri.fromFile(compression.resize(resultUri.getPath(), width, height, 100, galleryPath));
                     }
 
                     WritableMap result = getSelection(activity, resultUri, false);
@@ -775,22 +777,25 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     }
 
     private File createImageFile() throws IOException {
-
         String imageFileName = "image-" + UUID.randomUUID().toString();
-        File path = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES);
+        File path;
 
+        if (galleryPath != null) {
+            path = new File(galleryPath);
+        } else {
+            path = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES
+            );
+        }
         if (!path.exists() && !path.isDirectory()) {
             path.mkdirs();
         }
-
         File image = File.createTempFile(imageFileName, ".jpg", path);
 
         // Save a file: path for use with ACTION_VIEW intents
         mCurrentMediaPath = "file:" + image.getAbsolutePath();
 
         return image;
-
     }
 
     private File createVideoFile() throws IOException {
